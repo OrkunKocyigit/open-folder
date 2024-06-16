@@ -1,8 +1,10 @@
 on:
   release:
-    types: [created]
+    types: [ created ]
+
 env:
   PROJECT_NAME: open-folder
+
 jobs:
   build:
     runs-on: ${{ matrix.runner }}
@@ -32,14 +34,25 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Build Binary
         run: cargo build --verbose --release --target ${{ matrix.target }}
-      - name: Release Binary
+      - name: Prepare Binary for Release
         shell: bash
         run: |
           BIN_SUFFIX=""
+          ARCHIVE_NAME="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}"
           if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
             BIN_SUFFIX=".exe"
+            ARCHIVE_NAME+="${BIN_SUFFIX}.zip"
+            7z a $ARCHIVE_NAME "${PROJECT_NAME}${BIN_SUFFIX}"
+          else
+            ARCHIVE_NAME+=".tar.gz"
+            tar -czvf $ARCHIVE_NAME "${PROJECT_NAME}${BIN_SUFFIX}"
           fi
-          BIN_OUTPUT="target/${{ matrix.target }}/release/${PROJECT_NAME}${BIN_SUFFIX}"
-          BIN_RELEASE="${PROJECT_NAME}-${{ matrix.name }}${BIN_SUFFIX}"
-          BIN_RELEASE_VERSIONED="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}${BIN_SUFFIX}"
-          mv "${BIN_OUTPUT}" "./<your-destination>/${BIN_RELEASE}"
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./$ARCHIVE_NAME
+          asset_name: $ARCHIVE_NAME
+          asset_content_type: application/octet-stream
