@@ -38,14 +38,22 @@ jobs:
         shell: bash
         run: |
           BIN_SUFFIX=""
-          ARCHIVE_NAME="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}"
           if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
             BIN_SUFFIX=".exe"
-            ARCHIVE_NAME+="${BIN_SUFFIX}.zip"
-            7z a $ARCHIVE_NAME "${PROJECT_NAME}${BIN_SUFFIX}"
+          fi
+          BIN_PATH="target/${{ matrix.target }}/release/${PROJECT_NAME}${BIN_SUFFIX}"
+          if [ -f "$BIN_PATH" ]; then
+            echo "Binary found at $BIN_PATH"
+            if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
+              ARCHIVE_NAME="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}.zip"
+              7z a $ARCHIVE_NAME "$BIN_PATH"
+            else
+              ARCHIVE_NAME="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}.tar.gz"
+              tar -czvf $ARCHIVE_NAME "$BIN_PATH"
+            fi
           else
-            ARCHIVE_NAME+=".tar.gz"
-            tar -czvf $ARCHIVE_NAME "${PROJECT_NAME}${BIN_SUFFIX}"
+            echo "Error: Binary not found at $BIN_PATH"
+            exit 1
           fi
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
