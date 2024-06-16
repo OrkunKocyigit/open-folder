@@ -1,0 +1,1 @@
+Simple Script to open parent folder of given path for all operating systems.
