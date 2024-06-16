@@ -11,3 +11,9 @@ debug = ["dep:simplelog"]
 log = {version = "0.4.21"}
 simplelog = {version = "0.12.2", optional = true}
 opener = {version = "0.7.1", features = ["reveal"]}
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = 'abort'
